@@ -21,12 +21,13 @@ func main() {
 
 	flag.Parse()
 
-	helper = NewCassHelper(*hosts, *port)
-	defer helper.Session().Close()
+	helper, err := NewCassHelper(*hosts, *port)
+	fatalOnError(err)
 
+	defer helper.Session().Close()
 	keyspace := "randrr"
 
-	err := helper.CreateSchemaTable(keyspace)
+	err = helper.CreateSchemaTable(keyspace)
 	fatalOnError(err)
 
 	log.Printf("version %v", helper.GetCurrentVersion(keyspace))

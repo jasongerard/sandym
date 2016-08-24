@@ -106,22 +106,21 @@ func (cas *CassHelper) CreateSchemaTable(keyspace string) error {
 }
 
 // NewCassHelper blah
-func NewCassHelper(host string, port int) *CassHelper {
+func NewCassHelper(host string, port int) (*CassHelper, error) {
 	h := &CassHelper{Host: host, Port: port}
 
 	cluster := gocql.NewCluster(host)
 	cluster.Port = port
 	cluster.ProtoVersion = 4
 	cluster.Timeout = 2 * time.Second // default is 600ms, creating table timed out on that
-	log.Printf("Timeout: %v", cluster.Timeout)
 
 	s, err := cluster.CreateSession()
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	h.session = s
 
-	return h
+	return h, nil
 }
