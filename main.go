@@ -30,16 +30,18 @@ func main() {
 		os.Exit(-1)
 	}
 
-	helper, err := NewCassHelper(*hosts, *port)
+	casHelper, err := NewCassHelper(*hosts, *port)
 	fatalOnError(err)
 
-	defer helper.Session().Close()
+	versionHelper := NewVersionHelper(*keyspace, casHelper)
 
-	helper.CreateKeyspace(*keyspace)
+	defer casHelper.Close()
 
-	err = helper.CreateSchemaTable(*keyspace)
+	versionHelper.CreateKeyspace()
+
+	err = versionHelper.CreateSchemaTable()
 	fatalOnError(err)
 
-	err = RunMigrations(*keyspace, *dir, helper)
+	err = RunMigrations(*dir, versionHelper)
 	fatalOnError(err)
 }

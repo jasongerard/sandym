@@ -22,14 +22,14 @@ type Migration struct {
 }
 
 // RunMigrations blah
-func RunMigrations(keyspace string, dir string, cas *CassHelper) error {
+func RunMigrations(dir string, vh *VersionHelper) error {
 	migrations := getMigrations(dir)
 
 	if len(migrations) == 0 {
 		log.Printf("No migrations found at %v\n", dir)
 	}
 
-	vis := cas.GetVersionInfo(keyspace)
+	vis := vh.GetVersionInfo()
 
 	if vis != nil {
 		// compare to files to determine what to run or if files have changes
@@ -52,16 +52,16 @@ func RunMigrations(keyspace string, dir string, cas *CassHelper) error {
 			continue
 		}
 		log.Printf("Running migration %v", m.Name)
-		err := cas.session.Query(m.Script).Exec()
+		err := vh.cas.Exec(m.Script)
 
 		if err != nil {
 			return err
 		}
 
 		insert := fmt.Sprintf(`insert into %v.sandym_schema_version (hash, script_name, ts) 
-							values (?, ?, ?)`, keyspace)
+							values (?, ?, ?)`, vh.Keyspace())
 
-		err = cas.session.Query(insert, m.Sha1, m.Name, time.Now()).Exec()
+		err = vh.cas.Exec(insert, m.Sha1, m.Name, time.Now())
 
 		if err != nil {
 			return err
