@@ -55,7 +55,6 @@ func RunMigrations(keyspace string, dir string, cas *CassHelper) error {
 		err := cas.session.Query(m.Script).Exec()
 
 		if err != nil {
-			panic(err)
 			return err
 		}
 
@@ -65,7 +64,6 @@ func RunMigrations(keyspace string, dir string, cas *CassHelper) error {
 		err = cas.session.Query(insert, m.Sha1, m.Name, time.Now()).Exec()
 
 		if err != nil {
-			panic(err)
 			return err
 		}
 	}
