@@ -9,15 +9,16 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"time"
 )
 
 // Migration blah
 type Migration struct {
-	Version int
-	Sha1    string
-	Name    string
-	Script  string
-	Ignore  bool
+	Sha1       string
+	Name       string
+	Script     string
+	Ignore     bool
+	ScriptName string
 }
 
 // RunMigrations blah
@@ -34,9 +35,9 @@ func RunMigrations(keyspace string, dir string, cas *CassHelper) error {
 		// compare to files to determine what to run or if files have changes
 		for _, v := range vis {
 			for _, m := range migrations {
-				if v.Version == m.Version {
+				if v.ScriptName == m.ScriptName {
 					if v.Hash != m.Sha1 {
-						log.Fatalf("Hash does not match for version %v %v", v.Version, m.Name)
+						log.Fatalf("Hashes do not match for script %v.\nFile hash %v\nStored Hash %v", m.Name, m.Sha1, v.Hash)
 					} else {
 						m.Ignore = true
 					}
@@ -46,12 +47,22 @@ func RunMigrations(keyspace string, dir string, cas *CassHelper) error {
 	}
 
 	for _, m := range migrations {
-		if m.Ignore {
-			log.Printf("Skipping %v %v...", m.Version, m.Name)
+		if m.Ignore == true {
+			log.Printf("Skipping %v with hash %v\n", m.Name, m.Sha1)
 			continue
 		}
 		log.Printf("Running migration %v", m.Name)
 		err := cas.session.Query(m.Script).Exec()
+
+		if err != nil {
+			panic(err)
+			return err
+		}
+
+		insert := fmt.Sprintf(`insert into %v.sandym_schema_version (hash, script_name, ts) 
+							values (?, ?, ?)`, keyspace)
+
+		err = cas.session.Query(insert, m.Sha1, m.Name, time.Now()).Exec()
 
 		if err != nil {
 			panic(err)
@@ -63,7 +74,7 @@ func RunMigrations(keyspace string, dir string, cas *CassHelper) error {
 }
 
 // GetMigrations gets list of all migration files to run
-func getMigrations(dir string) []Migration {
+func getMigrations(dir string) []*Migration {
 	files, _ := filepath.Glob(fmt.Sprintf("%v/*.cql", dir))
 	sort.Strings(files)
 
@@ -77,10 +88,10 @@ func getMigrations(dir string) []Migration {
 	}
 
 	if len(files) == 0 {
-		return make([]Migration, 0)
+		return make([]*Migration, 0)
 	}
 
-	migrations := make([]Migration, len(files))
+	migrations := make([]*Migration, len(files))
 
 	for i, f := range files {
 		b, _ := ioutil.ReadFile(f)
@@ -89,7 +100,7 @@ func getMigrations(dir string) []Migration {
 		hasher.Write(b)
 		sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
 
-		migrations[i] = Migration{Version: 0, Sha1: sha, Name: f, Script: string(b)}
+		migrations[i] = &Migration{Sha1: sha, Name: f, Script: string(b), ScriptName: f}
 	}
 
 	return migrations

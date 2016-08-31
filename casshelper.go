@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 
-	"log"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -11,8 +10,8 @@ import (
 
 // VersionInfo blahs
 type VersionInfo struct {
-	Version int
-	Hash    string
+	Hash       string
+	ScriptName string
 }
 
 // CassHelper Basic wrapper for gocql
@@ -44,7 +43,7 @@ func (cas *CassHelper) TableExist(keyspace string, table string) bool {
 
 // GetVersionInfo blah
 func (cas *CassHelper) GetVersionInfo(keyspace string) []VersionInfo {
-	qstr := fmt.Sprintf("select version, hash from %v.sandym_schema_version", keyspace)
+	qstr := fmt.Sprintf("select hash, script_name from %v.sandym_schema_version", keyspace)
 
 	it := cas.session.Query(qstr).Iter()
 	defer it.Close()
@@ -56,35 +55,31 @@ func (cas *CassHelper) GetVersionInfo(keyspace string) []VersionInfo {
 
 	infos := make([]VersionInfo, numRows)
 
-	var version int
+	var scriptName string
 	var hash string
 
 	for i := 0; i < numRows; i++ {
-		it.Scan(&version, &hash)
-		infos[i] = VersionInfo{Version: version, Hash: hash}
+		it.Scan(&hash, &scriptName)
+		infos[i] = VersionInfo{ScriptName: scriptName, Hash: hash}
 	}
 
 	return infos
 
 }
 
-// GetCurrentVersion blah
-func (cas *CassHelper) GetCurrentVersion(keyspace string) int {
-	qstr := fmt.Sprintf("select max(version) from %v.sandym_schema_version", keyspace)
+func (cas *CassHelper) CreateKeyspace(keyspace string) error {
 
-	it := cas.session.Query(qstr).Iter()
-	defer it.Close()
+	if !cas.KeyspaceExist(keyspace) {
+		qstr := fmt.Sprintf(`CREATE KEYSPACE %v WITH 
+		replication = {
+			'class': 'SimpleStrategy', 
+			'replication_factor': '1'
+		} AND durable_writes = true;`, keyspace)
 
-	numRows := it.NumRows()
-	if numRows == 0 {
-		return 0
+		return cas.session.Query(qstr).Exec()
 	}
 
-	var version int
-
-	it.Scan(&version)
-
-	return version
+	return nil
 }
 
 // CreateSchemaTable creates the sandym_schema_version table if it doesn't exist
@@ -95,11 +90,9 @@ func (cas *CassHelper) CreateSchemaTable(keyspace string) error {
 			hash text,
 			script_name text,
 			ts timestamp,
-			version int,
 			primary key(hash)
 		)`, keyspace)
 
-		log.Println(qstr)
 		return cas.session.Query(qstr).Exec()
 	}
 	return nil
