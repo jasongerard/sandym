@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -13,12 +15,42 @@ type CassHelper struct {
 	session *gocql.Session
 }
 
+func (cas *CassHelper) ExecMultiple(query string, v ...interface{}) error {
+
+	if strings.TrimSpace(query) == "" {
+		return errors.New("query cannot be empty")
+	}
+	qs := strings.Split(query, ";")
+
+	if len(qs) == 0 {
+		return errors.New("query cannot be empty")
+	}
+
+	for _, q := range qs {
+		if strings.TrimSpace(q) == "" {
+			continue
+		}
+		err := cas.Exec(strings.TrimSpace(q), v...)
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (cas *CassHelper) Exec(query string, v ...interface{}) error {
-	return cas.session.Query(query, v).Exec()
+
+	if strings.TrimSpace(query) == "" {
+		return errors.New("query cannot be empty")
+	}
+
+	return cas.session.Query(query, v...).Exec()
 }
 
 func (cas *CassHelper) Query(query string, v ...interface{}) *gocql.Query {
-	return cas.session.Query(query, v)
+
+	return cas.session.Query(query, v...)
 }
 
 func (cas *CassHelper) Close() {

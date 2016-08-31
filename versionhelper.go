@@ -70,7 +70,7 @@ func (v *VersionHelper) CreateSchemaTable() error {
 			script_name text,
 			ts timestamp,
 			primary key(hash)
-		)`, v.keyspace)
+		);`, v.keyspace)
 
 		return v.cas.Exec(qstr)
 	}

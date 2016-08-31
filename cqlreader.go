@@ -52,7 +52,7 @@ func RunMigrations(dir string, vh *VersionHelper) error {
 			continue
 		}
 		log.Printf("Running migration %v", m.Name)
-		err := vh.cas.Exec(m.Script)
+		err := vh.cas.ExecMultiple(m.Script)
 
 		if err != nil {
 			return err
@@ -80,7 +80,7 @@ func getMigrations(dir string) []*Migration {
 	for i := len(files) - 1; i >= 0; i-- {
 		f := files[i]
 
-		if match, _ := regexp.MatchString(`^\d*_\w*.cql$`, f); !match {
+		if match, _ := regexp.MatchString(`^\d*_{1,2}\w*.cql$`, filepath.Base(f)); !match {
 			files = append(files[:i], files[i+1:]...)
 		}
 	}
