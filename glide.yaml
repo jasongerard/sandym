@@ -1,0 +1,3 @@
+package: github.com/randrr/sandym
+import:
+- package: github.com/gocql/gocql
