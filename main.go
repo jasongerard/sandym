@@ -30,7 +30,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	casHelper, err := NewCassHelper(*hosts, *port)
+	casHelper, err := NewCassHelper(*hosts, *port, *keyspace)
 	fatalOnError(err)
 
 	versionHelper := NewVersionHelper(*keyspace, casHelper)

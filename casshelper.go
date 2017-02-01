@@ -73,10 +73,11 @@ func (cas *CassHelper) TableExist(keyspace string, table string) bool {
 }
 
 // NewCassHelper blah
-func NewCassHelper(host string, port int) (*CassHelper, error) {
+func NewCassHelper(host string, port int, keyspace string) (*CassHelper, error) {
 	h := &CassHelper{Host: host, Port: port}
 
 	cluster := gocql.NewCluster(host)
+	cluster.Keyspace = keyspace
 	cluster.Port = port
 	cluster.ProtoVersion = 4
 	cluster.Timeout = 2 * time.Second // default is 600ms, creating table timed out on that
