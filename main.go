@@ -21,6 +21,8 @@ func main() {
 	dir := flag.String("dir", ".", "location of migration files")
 	hosts := flag.String("hosts", "localhost", "comma seperated list of cassandra instances")
 	port := flag.Int("port", 9042, "port cassandra is listening on")
+	username := flag.String("username", "", "cassandra username")
+	password := flag.String("password", "", "cassandra password")
 
 	flag.Parse()
 
@@ -30,7 +32,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	casHelper, err := NewCassHelper(*hosts, *port, *keyspace)
+	casHelper, err := NewCassHelper(*hosts, *port, *keyspace, *username, *password)
 	fatalOnError(err)
 
 	versionHelper := NewVersionHelper(*keyspace, casHelper)

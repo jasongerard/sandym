@@ -73,7 +73,7 @@ func (cas *CassHelper) TableExist(keyspace string, table string) bool {
 }
 
 // NewCassHelper blah
-func NewCassHelper(host string, port int, keyspace string) (*CassHelper, error) {
+func NewCassHelper(host string, port int, keyspace string, username string, password string) (*CassHelper, error) {
 	h := &CassHelper{Host: host, Port: port}
 
 	cluster := gocql.NewCluster(host)
@@ -81,6 +81,13 @@ func NewCassHelper(host string, port int, keyspace string) (*CassHelper, error) 
 	cluster.Port = port
 	cluster.ProtoVersion = 4
 	cluster.Timeout = 2 * time.Second // default is 600ms, creating table timed out on that
+
+	if username != "" {
+		cluster.Authenticator = gocql.PasswordAuthenticator{
+			Username: username,
+			Password: password,
+		}
+	}
 
 	s, err := cluster.CreateSession()
 
